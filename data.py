@@ -164,7 +164,7 @@ import cerberus
 
 import schema
 
-OSM_PATH = "med map.osm"
+OSM_PATH = "Seville map.osm"
 
 NODES_PATH = "nodes.csv"
 NODE_TAGS_PATH = "nodes_tags.csv"

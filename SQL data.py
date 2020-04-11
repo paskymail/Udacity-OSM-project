@@ -64,7 +64,7 @@ def create_table_from_csv(conn, csvfile, table_name, index_val):
     except Error as e:
         print(e)
 
-database = r"DBTest.db"
+database = r"OSMSeville.db"
  
 sql_create_table_nodes = """ CREATE TABLE IF NOT EXISTS nodes
 

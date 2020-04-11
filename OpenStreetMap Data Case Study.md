@@ -5,7 +5,7 @@ Sevilla, Andalusia, Spain
 
 - [https://www.openstreetmap.org/relation/342563](https://www.openstreetmap.org/relation/342563)
 
-This map is of my hometown, so I’m more interested to see what database querying reveals, and I’d like an opportunity to contribute to its improvement on OpenStreetMap.org.
+This map is of my hometown, so I’m more interested to see what database querying reveals.
 
 ## Files used
 1. Data.py
@@ -47,9 +47,10 @@ This map is of my hometown, so I’m more interested to see what database queryi
       - node_id: foreign key to the node id
       - position: position in the list of nodes belonging to the way
 
-   
+   The Ind primary keys on the tags are added in order to update only these rows in the database when changes are made
+
 2. QSL data.py
-   It is used to create the SQL database (named OSMDB.db) where the tables are a mirror of the aforementioned csv tables. 
+   It is used to create the SQL database (named OSMSevilla.db) where the tables are a mirror of the aforementioned csv tables. 
    It is also used to perform queries and cast the results into pandas dataframes which allow easier further manipulation
 
 3. OSM Queries.sql
@@ -198,10 +199,7 @@ mapping_color = {
 
 
 ### Postal Codes
-Postal code strings posed a different sort of problem, forcing a decision to strip all leading and trailing characters before and after the main 5­digit zip code. This effectively dropped all leading state characters (as in “NC28226”) and 4­digit zip code extensions following a hyphen (“28226­0783”). This 5­digit restriction allows for more consistent queries.
 
-
-Regardless, after standardizing inconsistent postal codes, some altogether “incorrect” (or perhaps misplaced?) postal codes surfaced when grouped together with this aggregator:
 
 ```sql
 SELECT tags.value, COUNT(*) as count 

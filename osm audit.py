@@ -56,7 +56,7 @@ def update_tags(df, column, mapping):
         df2[column][i]= update_name(dummy, mapping)
     return df2
 
-database = r"DBTest.db"
+database = r"OSMSeville.db"
 
 query_tag_keys = """
 SELECT ind, key, value
@@ -143,6 +143,6 @@ pprint(Corrected_keys)
 
 
 #Update the database
-update_table_from_dataframe(conn, Corrected_keys, "nodes_tags")
+#update_table_from_dataframe(conn, Corrected_keys, "nodes_tags")
 
 conn.close()

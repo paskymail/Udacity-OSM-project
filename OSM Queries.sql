@@ -44,6 +44,9 @@
 -- FROM nodes_tags
 -- where (key = "colour") and not value LIKE '%#%';
 
-SELECT ind, key, value
-FROM nodes_tags
-where ((key = "zip") or (key = "state")) and type = "addr"
+-- SELECT ind, key, value
+-- FROM nodes_tags
+-- where ((key = "zip") or (key = "state")) and type = "addr"
+
+SELECT count(*)
+FROM nodes_tags;

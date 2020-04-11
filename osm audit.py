@@ -141,6 +141,8 @@ Corrected_color = update_tags(color, "value", mapping_color)
 
 pprint(Corrected_keys)
 
+
+#Update the database
 update_table_from_dataframe(conn, Corrected_keys, "nodes_tags")
 
 conn.close()

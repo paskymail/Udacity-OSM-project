@@ -1,1 +1,0 @@
-print("INSERT OR REPLACE INTO nodes_tags ("+") VALUES ("+"s,"*5+"s)")

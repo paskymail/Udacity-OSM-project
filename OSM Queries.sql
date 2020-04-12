@@ -48,5 +48,26 @@
 -- FROM nodes_tags
 -- where ((key = "zip") or (key = "state")) and type = "addr"
 
-SELECT count(*)
-FROM nodes_tags;
+-- SELECT ind, key, value
+-- FROM nodes_tags
+-- where (key = "street") and type = "addr" ;
+
+-- SELECT tags.value, COUNT(*) as count 
+-- FROM (SELECT * FROM nodes_tags 
+-- 	  UNION
+--       SELECT * FROM ways_tags) tags
+-- WHERE tags.key='postcode' and not value LIKE '%41%'
+-- GROUP BY tags.value
+-- ORDER BY count DESC;
+
+
+-- SELECT tags.value, tags.key, tags.type, COUNT(*) as count 
+-- FROM (SELECT * FROM nodes_tags UNION ALL 
+--       SELECT * FROM ways_tags) tags
+-- WHERE tags.key = "city" and not tags.value LIKE "%Sevilla%"
+-- GROUP BY tags.value
+-- ORDER BY count DESC;
+
+SELECT COUNT(*) FROM nodes;
+
+SELECT COUNT(*) FROM ways;

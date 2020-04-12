@@ -54,20 +54,25 @@ This map is of my hometown, so I’m more interested to see what database queryi
    It is also used to perform queries and cast the results into pandas dataframes which allow easier further manipulation
 
 3. OSM Queries.sql
-   It is used to perform queries to OSMDB.db using sqlite
+   It is used to perform queries to OSMDB.db using sqlite.
+   This queries are then used in OSM audit.py to select only the problematic data to be treated. only the problematic rows are treated to be corrected.
 
 4. OSM audit.py
    It is used to perform changes to the OSMDB.db in order to correct the problems found. 
-   1. It performs queries to the DB and import them into dataframes
+   1. It performs queries to the DB to select only the problematic rows (when possible) and imports them into dataframes
    2. This dataframes are transformed and corrected
    3. the corrected dataframes are then exported to the database for update
 
 ## Problems Encountered in the Map
 The first encountered problem was handling Unicode strings as the Spanish alphabet uses several special characters which where not correctly handled when converted to UTF-8 by DictWriter. Fortunately Python 3's built-in csv module supports Unicode natively by selecting encoding='utf-8-sig' when opening the csv. It worked!
 
-Once ready, I screened a small sample size area around my house (so I know all the places around) and I run it against the data.py file done during the lesson exercises. 
+Once ready, I screened a small sample size area around my house (so I know all the places around) and I run it against the data.py file done during the lesson exercises obtaining the DBTest.db
 
-I followed the steps below to systematically screen the values of the tags
+Once I got an idea of the problems I could found, I created the OSMSeville.db from the complete map of Seville (87MB) using the data.py and SQL data.py files.
+
+Note that in SQL data.py I added an index as primary key to the nodes_tags and ways_tags tables so I can perform the update of selected rows by index.
+
+Once, my database was ready, I followed the steps below to systematically screen the values of the tags:
 
    1. First, I filtered the tags by address type, since it should be the most regular. Here below I list the problems per found per key:
       1. Country
@@ -77,8 +82,8 @@ I followed the steps below to systematically screen the values of the tags
       3. Province
          1. No issues, all values to "Sevilla"
       4. City
-         1. Some values contained information from other keys, as for example "Sevilla (Spain)"
-         2. Some values included neighborhoods as for example " Sevilla / Casco Antiguo / San Bartolomé
+         1. Some values of Sevilla are not correctly written or are in another language
+         2. Some values included neighborhoods as for example " Sevilla / Casco Antiguo / San Bartolomé but seems structured and easy to undstand
       5. Postcode
          1. No issues, all postal codes are consistent
       6. Zip
@@ -98,9 +103,11 @@ I followed the steps below to systematically screen the values of the tags
          1. Some colors are in HEX (#D6B290) and others as a color noun.
 
 ### 1.2 and 1.6 Replace and consolidate tag keys
-In the file audit.py I created a function called update_keys to update the following keys
-   - zip --> postcode
-   - state --> country
+In the file audit.py I created the functions to update any chosen column in accordance with a given dictionary.
+
+In this case we will remove some redundant tag keys and change them by more appropriate ones.
+
+The query filters the results to only treat the desired keys ("zip" and "state")
 
 ```python 
 def update_name(name, mapping):
@@ -133,12 +140,107 @@ tag_keys = pd.read_sql_query(query_tag_keys, conn)
 Corrected_keys = update_tags(tag_keys, "key", mapping_keys)
 ````
 
-As can be seen, both update tags and update_name functions can be used for any correction and only the query and mapping changes.
+As can be seen, both update_tags and update_name functions can be used for any correction. Only the query and mapping changes.
 
-Therefore, for the next corrections only the query and mapping will be given as the functions are reused.
+Therefore, for the next corrections only the query and mapping will be given as the other functions are reused.
+
+Finally the following function is used to update the database with the information contained in the corrected dataframe
+
+```python
+def update_table_from_dataframe(conn, df, table):
+    """ update a table from the dataform
+    :param conn: Connection object
+    :param df: dataform withe the info to update
+    :param table: table to be updated
+    :return:
+    """
+    try:
+        cursor=conn.cursor()
+        # creating column list for insertion
+        cols = ",".join([str(i) for i in df.columns.tolist()])
+        # Insert DataFrame recrds one by one.
+        for i,row in df.iterrows():
+            sql = "REPLACE INTO " + table + " ("+cols+") VALUES "+str(tuple(row))+";"
+            print(sql)
+            cursor.execute(sql)
+            # the connection is not autocommitted by default, so we must commit to save our changes
+            conn.commit()
+    
+    except Error as e:
+        print(e)
+```
+
+In order to be able to update the database easily, I decided to perform two diferent queries: one on the nodes_tags table and the other on the ways_tags tables. 
+
+Note that we can also perform any of the shown queries to the combined nodes_tags and ways_tags tables as they share the same columns.
+
+This can be done by performing the a UNION subquery and then performing the desired query on the subquery. 
+
+Thus we need only to replace
+
+```sql
+SELECT ind, key, value
+FROM nodes_tags
+where (key = "zip") or (key = "state");
+```
+by the following query including the UNION subquery
+
+```sql
+SELECT tags.ind, tags.key, tags.value 
+FROM (SELECT * FROM nodes_tags UNION 
+      SELECT * FROM ways_tags) as tags
+where (tags.key = "zip") or (tags.key = "state");
+```
+
+From now on we will only include the query on nodes_tags for simplicity.
+
+
+### 1.4 standardize Sevilla city
+After screening of the city names, I created a dictionary of Sevilla misspelings to replace them by "Sevilla".
+
+```sql
+SELECT ind, key, value
+FROM nodes_tags
+where key = "city" and type = "addr" ;
+```
+
+```python 
+Corrected_city = update_tags(city, "value", mapping_city)
+
+mapping_city = { 
+             "Sevila": "Sevilla",
+             "Seville": "Sevilla",
+             "Sevillla": "Sevilla",
+             "41008": "Sevilla",
+             "41010": "Sevilla"
+            }   
+```
+
+### 1.7 remove street abbreviations
+After screening of the street names, I created a dictionary of abbreviations to replace them by the full noun.
+
+```sql
+SELECT ind, key, value
+FROM nodes_tags
+where (key = "street") and type = "addr" ;
+```
+
+```python 
+Corrected_street = update_tags(street, "value", mapping_street)
+
+mapping_street = { 
+             "C/": "Calle",
+             "Av.": "Avenida",
+             "AVDA.": "Avenida",
+             "Ctra.": "Carretera",
+             "CTRA.": "Carretera",
+             "CRTA.": "Carretera",
+             "CR": "Carretera"
+            }  
+```
 
 ### 1.8 standardize house numbers
-In the file audit.py I created a function called update_tags to make the following changes:
+The following changes are made:
    - remove the acc abbreviation
    - change ";" for "-" in the number list 
 
@@ -159,7 +261,7 @@ mapping_housenumbers = {
 ````
 ### 2.1 standardize phone numbers
 In the file audit.py the following changes are made:
-   - tag type is changed for phone numbers from regular --> contact
+   - tag type is changed for phone numbers from regular to contact
 
 ```sql
 SELECT ind, key, value, type
@@ -176,8 +278,8 @@ mapping_phone = {
 ````
 
 ### 2.2 standardize colors
-In the file audit.py the following changes are made:
-   - color values expresed are nous are changed into HEX
+The follwoing changes are made:
+   - the color values that are expresed in nouns are changed into HEX codification
 
 ```sql
 SELECT ind, key, value
@@ -198,112 +300,81 @@ mapping_color = {
 ````
 
 
+## Other checks performed
+
 ### Postal Codes
 
+Once the "zip" key is changed to "postcode", all postcodes are checked for consistency 
 
 ```sql
 SELECT tags.value, COUNT(*) as count 
 FROM (SELECT * FROM nodes_tags 
-	  UNION ALL 
+	  UNION
       SELECT * FROM ways_tags) tags
-WHERE tags.key='postcode'
-GROUP BY tags.value
-ORDER BY count DESC;
+WHERE tags.key='postcode' and not value LIKE '%41%'
+GROUP BY tags.value;
 ```
 
-Here are the top ten results, beginning with the highest count:
+Only one postcode was found inconsistent, that should be removed
 
 ```sql
-value|count
-28205|900
-28208|388
-28206|268
-28202|204
-28204|196
-28216|174
-28211|148
-28203|120
-28209|104
-28207|86
+	#	value	count
+   1	18360	1
 ```
 
- These results were taken before accounting for Tiger GPS zip codes residing in second­ level “k” tags. Considering the relatively few documents that included postal codes, of those, it appears that out of the top ten, seven aren’t even in Charlotte, as marked by a “#”. That struck me as surprisingly high to be a blatant error, and found that the number one postal code and all others starting with“297”lie in Rock Hill, SC. So, I performed another aggregation to verify a certain suspicion...
-# Sort cities by count, descending
+### Cities inclueded
 
 ```sql
-sqlite> SELECT tags.value, COUNT(*) as count 
+SELECT tags.value, tags.key, tags.type, COUNT(*) as count 
 FROM (SELECT * FROM nodes_tags UNION ALL 
       SELECT * FROM ways_tags) tags
-WHERE tags.key LIKE '%city'
+WHERE tags.key = "city" and not tags.value LIKE "%Sevilla%"
 GROUP BY tags.value
 ORDER BY count DESC;
 ```
-
-And, the results, edited for readability:
-
-```sql
-Rock Hill   111       
-Pineville   27        
-Charlotte   26        
-York        24        
-Matthews    10        
-Concord     4         
-3000        3         
-10          2         
-Lake Wylie  2         
-1           1         
-3           1         
-43          1         
-61          1         
-Belmont, N  1         
-Fort Mill,  1         
-```
-
-These results confirmed my suspicion that this metro extract would perhaps be more aptly named “Metrolina” or the “Charlotte Metropolitan Area” for its inclusion of surrounding cities in the sprawl. More importantly, three documents need to have their trailing state abbreviations stripped. So, these postal codes aren’t “incorrect,” but simply unexpected. However, one final case proved otherwise.
-A single zip code stood out as clearly erroneous. Somehow, a “48009” got into the dataset. Let’s display part of its document for closer inspection (for our purposes, only the “address” and “pos” fields are relevant):
+These are the other cities included, which are correct since they limit with Seville:
 
 ```sql
-sqlite> SELECT *
-FROM nodes 
-WHERE id IN (SELECT DISTINCT(id) FROM nodes_tags WHERE key='postcode' AND value='48009')
+#|value|key|type|count
+1|Tomares|city|addr|27
+2|Camas|city|addr|25
+3|San|Juan|de|Aznalfarache|city|addr|16
+4|Castilleja|de|la|Cuestacity|addr|11
+5|Alcalá|de|Guadaíra|city|	addr|6
+6|Mairena|del|Aljarafe|city|addr|5
+7|Alcalá|de|Guadaira|city|addr|3
+8|Coca|de|la|Piñeracity|addr|3
+9|Dos|Hermanas|city|addr|3
+10|Montequinto|city|addr|3
+11|camas|city|addr|3
+12|Gelves|city|addr|1     
 ```
-`1234706337|35.2134608|-80.8270161|movercash|433196|1|7784874|2011-04-06T13:16:06Z`
-
-`sqlite> SELECT * FROM nodes_tags WHERE id=1234706337 and type='addr';`
-
-```sql
-1234706337|housenumber|280|addr
-1234706337|postcode|48009|addr
-1234706337|street|North Old Woodward Avenue|addr
-```
-
- It turns out, *“280 North Old Woodward Avenue, 48009”* is in Birmingham, Michigan. All data in this document, including those not shown here, are internally consistent and verifiable, except for the latitude and longitude. These coordinates are indeed in Charlotte, NC. I’m not sure about the source of the error, but we can guess it was most likely sitting in front of a computer before this data entered the map. The document can be removed from the database easily enough.
 
 # Data Overview and Additional Ideas
-This section contains basic statistics about the dataset, the MongoDB queries used to gather them, and some additional ideas about the data in context.
+This section contains basic statistics about the dataset and some additional ideas about the data in context.
 
 ### File sizes
 ```
-charlotte.osm ......... 294 MB
-charlotte.db .......... 129 MB
-nodes.csv ............. 144 MB
-nodes_tags.csv ........ 0.64 MB
-ways.csv .............. 4.7 MB
-ways_tags.csv ......... 20 MB
-ways_nodes.cv ......... 35 MB  
+Seville map.osm ......... 87 MB
+OSMSeville.db .......... 53 MB
+nodes.csv ............. 29 MB
+nodes_tags.csv ........ 4 MB
+ways.csv .............. 3 MB
+ways_tags.csv ......... 5 MB
+ways_nodes.cv ......... 12 MB  
 ```  
 
 ### Number of nodes
 ```
-sqlite> SELECT COUNT(*) FROM nodes;
+SELECT COUNT(*) FROM nodes;
 ```
-1471350
+355969
 
 ### Number of ways
 ```
-sqlite> SELECT COUNT(*) FROM ways;
+SELECT COUNT(*) FROM ways;
 ```
-84502
+56897
 
 ### Number of unique users
 ```sql

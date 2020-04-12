@@ -24,6 +24,7 @@ def update_table_from_dataframe(conn, df, table):
     """ update a table from the dataform
     :param conn: Connection object
     :param df: dataform withe the info to update
+    :param table: table to be updated
     :return:
     """
     try:
@@ -33,10 +34,9 @@ def update_table_from_dataframe(conn, df, table):
         # Insert DataFrame recrds one by one.
         for i,row in df.iterrows():
             sql = "REPLACE INTO " + table + " ("+cols+") VALUES "+str(tuple(row))+";"
-            print(sql)
             cursor.execute(sql)
-        # the connection is not autocommitted by default, so we must commit to save our changes
-        conn.commit()
+            # the connection is not autocommitted by default, so we must commit to save our changes
+            conn.commit()
     
     except Error as e:
         print(e)
@@ -65,7 +65,8 @@ where (key = "zip") or (key = "state");
 """
 mapping_keys = { 
              "zip": "postcode",
-             "state": "country", 
+             "state": "country",
+             "flats": "housenumber" 
             }
 
 query_tag_numbers = """
@@ -104,8 +105,35 @@ mapping_color = {
              "blue": "#0000FF"
             }         
 
+query_tag_street = """
+SELECT ind, key, value
+FROM nodes_tags
+where (key = "street") and type = "addr" ;
+"""
 
+mapping_street = { 
+             "C/": "Calle",
+             "Av.": "Avenida",
+             "AVDA.": "Avenida",
+             "Ctra.": "Carretera",
+             "CTRA.": "Carretera",
+             "CRTA.": "Carretera",
+             "CR": "Carretera"
+            }    
 
+query_tag_city = """
+SELECT ind, key, value
+FROM nodes_tags
+where key = "city" and type = "addr" ;
+"""
+
+mapping_city = { 
+             "Sevila": "Sevilla",
+             "Seville": "Sevilla",
+             "Sevillla": "Sevilla",
+             "41008": "Sevilla",
+             "41010": "Sevilla"
+            }  
 
 
 
@@ -126,6 +154,8 @@ if conn is not None:
     housenumbers = pd.read_sql_query(query_tag_numbers, conn)
     phone = pd.read_sql_query(query_tag_phone, conn)
     color = pd.read_sql_query(query_tag_color, conn)
+    street = pd.read_sql_query(query_tag_street, conn)
+    city = pd.read_sql_query(query_tag_city, conn)
 
 else:
     print("Error! cannot create the database connection.")
@@ -139,10 +169,14 @@ Corrected_phone = update_tags(phone, "type", mapping_phone)
 
 Corrected_color = update_tags(color, "value", mapping_color)
 
-pprint(Corrected_keys)
+Corrected_street = update_tags(street, "value", mapping_street)
+
+Corrected_city = update_tags(city, "value", mapping_city)
+
+pprint(Corrected_city)
 
 
 #Update the database
-#update_table_from_dataframe(conn, Corrected_keys, "nodes_tags")
+#update_table_from_dataframe(conn, Corrected_city, "nodes_tags")
 
 conn.close()

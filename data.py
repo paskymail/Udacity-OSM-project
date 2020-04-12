@@ -333,4 +333,6 @@ def process_map(file_in, validate):
 if __name__ == '__main__':
     # Note: Validation is ~ 10X slower. For the project consider using a small
     # sample of the map when validating.
+    print("start!")
     process_map(OSM_PATH, validate=True)
+    print("end!")

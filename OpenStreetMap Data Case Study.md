@@ -378,31 +378,56 @@ SELECT COUNT(*) FROM ways;
 
 ### Number of unique users
 ```sql
-sqlite> SELECT COUNT(DISTINCT(e.uid))          
-FROM (SELECT uid FROM nodes UNION ALL SELECT uid FROM ways) e;
+SELECT COUNT(DISTINCT(e.uid))          
+FROM (SELECT users, uid FROM nodes UNION ALL SELECT user, uid FROM ways) e;
 ```
-337
+1046
 
-### Top 10 contributing users
+### Top 10 contributing users to nodes and ways
 ```sql
-sqlite> SELECT e.user, COUNT(*) as num
-FROM (SELECT user FROM nodes UNION ALL SELECT user FROM ways) e
+SELECT e.user, COUNT(e.uid) as count         
+FROM (SELECT uid, user FROM nodes UNION ALL SELECT uid, user FROM ways) e
 GROUP BY e.user
-ORDER BY num DESC
+ORDER BY count DESC
 LIMIT 10;
 ```
 
 ```sql
-jumbanho    823324    
-woodpeck_f  481549    
-TIGERcnl    44981     
-bot-mode    32033     
-rickmastfa  18875     
-Lightning   16924     
-grossing    15424     
-gopanthers  14988     
-KristenK    11023     
-Lambertus   8066 
+#	user	count
+1	erlenmeyer	104084
+2	Juan Pedro Ruiz	50931
+3	BoomEngine	33827
+4	cirdancarpintero	28737
+5	nonopp	15810
+6	avm	14962
+7	nanino90	11968
+8	Alberto Molina	11090
+9	Ro5597	8529
+10	AtomMapper	7619
+```
+
+### Top 10 contributing users to tags (both for nodes and ways)
+```sql
+SELECT total.user, count(total.ind) as count
+FROM (select w.user, w.ind FROM (SELECT ways.user, ways_tags.ind
+FROM ways_tags JOIN ways WHERE ways_tags.id = ways.id) as w UNION select n.user, n.ind FROM (SELECT nodes.user, nodes_tags.ind
+FROM nodes_tags JOIN nodes WHERE nodes_tags.id = nodes.id) as n) as total
+GROUP by total.user
+Order by count DESC
+Limit 10;
+```
+```sql
+#	user	count
+1	erlenmeyer	45023
+2	Juan Pedro Ruiz	26770
+3	nyuriks	19686
+4	BoomEngine	13496
+5	mapman44	10263
+6	avm	10127
+7	sanchi	6944
+8	Ro5597	6395
+9	CristinaDC	5687
+10	AtomMapper	5480
 ```
  
 ### Number of users appearing only once (having 1 post)
@@ -412,9 +437,9 @@ FROM
     (SELECT e.user, COUNT(*) as num
      FROM (SELECT user FROM nodes UNION ALL SELECT user FROM ways) e
      GROUP BY e.user
-     HAVING num=1)  u;
+     HAVING num<10)  u;
 ```
-56
+642
 
 # Additional Ideas
 

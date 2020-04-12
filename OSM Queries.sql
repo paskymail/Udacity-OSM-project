@@ -68,6 +68,47 @@
 -- GROUP BY tags.value
 -- ORDER BY count DESC;
 
-SELECT COUNT(*) FROM nodes;
+-- SELECT COUNT(*) FROM nodes;
 
-SELECT COUNT(*) FROM ways;
+-- SELECT COUNT(*) FROM ways;
+
+
+-- SELECT e.user, COUNT(e.uid) as count         
+-- FROM (SELECT uid, user FROM nodes UNION ALL SELECT uid, user FROM ways) e
+-- GROUP BY e.user
+-- ORDER BY count DESC
+-- LIMIT 10;
+
+-- SELECT e.user, COUNT(e.uid) as count         
+-- FROM (SELECT uid, user FROM nodes UNION ALL SELECT uid, user FROM ways) e
+-- GROUP BY e.user;
+
+-- SELECT nodes.user, count(nodes_tags.ind) as count
+-- FROM nodes_tags JOIN nodes
+-- WHERE nodes_tags.id = nodes.id
+-- GROUP by user
+-- Order by count DESC
+-- Limit 10;
+
+-- SELECT ways.user, count(ways_tags.ind) as count
+-- FROM ways_tags JOIN ways
+-- WHERE ways_tags.id = ways.id
+-- GROUP by user
+-- Order by count DESC
+-- Limit 10;
+
+-- SELECT total.user, count(total.ind) as count
+-- FROM (select w.user, w.ind FROM (SELECT ways.user, ways_tags.ind
+-- FROM ways_tags JOIN ways WHERE ways_tags.id = ways.id) as w UNION select n.user, n.ind FROM (SELECT nodes.user, nodes_tags.ind
+-- FROM nodes_tags JOIN nodes WHERE nodes_tags.id = nodes.id) as n) as total
+-- GROUP by total.user
+-- Order by count DESC
+-- Limit 10;
+
+SELECT COUNT(*) 
+FROM
+    (SELECT e.user, COUNT(*) as num
+     FROM (SELECT user FROM nodes UNION ALL SELECT user FROM ways) e
+     GROUP BY e.user
+     HAVING num<10)  u;
+

@@ -175,8 +175,11 @@ Corrected_city = update_tags(city, "value", mapping_city)
 
 pprint(Corrected_city)
 
-
+##############################################################
 #Update the database
+
 #update_table_from_dataframe(conn, Corrected_city, "nodes_tags")
+
+#################################################################
 
 conn.close()

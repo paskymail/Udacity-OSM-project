@@ -105,10 +105,67 @@
 -- Order by count DESC
 -- Limit 10;
 
-SELECT COUNT(*) 
-FROM
-    (SELECT e.user, COUNT(*) as num
-     FROM (SELECT user FROM nodes UNION ALL SELECT user FROM ways) e
-     GROUP BY e.user
-     HAVING num<10)  u;
+-- SELECT COUNT(*) 
+-- FROM
+--     (SELECT e.user, COUNT(*) as num
+--      FROM (SELECT user FROM nodes UNION ALL SELECT user FROM ways) e
+--      GROUP BY e.user
+--      HAVING num<10)  u;
 
+-- SELECT value, COUNT(*) as num
+-- FROM nodes_tags
+-- WHERE key='amenity'
+-- GROUP BY value
+-- ORDER BY num DESC
+-- LIMIT 10;
+
+-- SELECT tags.key, tags.type, COUNT(*) as num
+-- FROM (SELECT * FROM nodes_tags UNION ALL SELECT * FROM ways_tags) tags
+-- WHERE not tags.type = "addr"
+-- GROUP BY tags.key
+-- ORDER BY num DESC
+-- LIMIT 10;
+
+-- SELECT tags.key, tags.type, tags.value, COUNT(*) as num
+-- FROM (SELECT * FROM nodes_tags UNION ALL SELECT * FROM ways_tags) tags
+-- WHERE not tags.type = "addr" and (tags.key ="highway" or tags.key ="oneway")
+-- GROUP BY tags.value
+-- ORDER BY num DESC
+-- LIMIT 5;
+
+
+-- SELECT tags.key, tags.value, COUNT(*) as num
+-- FROM (SELECT * FROM nodes_tags UNION ALL SELECT * FROM ways_tags) tags
+-- WHERE  tags.key ="amenity"
+-- GROUP BY tags.value
+-- ORDER BY num DESC
+-- LIMIT 5;
+
+-- SELECT nodes_tags.value, COUNT(*) as num
+-- FROM nodes_tags JOIN (SELECT DISTINCT(id) FROM nodes_tags WHERE value='restaurant') i
+-- WHERE nodes_tags.id=i.id and nodes_tags.key='cuisine'
+-- GROUP BY nodes_tags.value
+-- ORDER BY num DESC
+-- LIMIT 5;
+
+-- SELECT nodes_tags.value, COUNT(nodes_tags.value) as num
+-- FROM nodes_tags JOIN nodes
+-- WHERE nodes_tags.id=nodes.id and nodes_tags.key='cuisine'
+-- GROUP BY nodes_tags.value
+-- ORDER BY num DESC
+-- LIMIT 5;
+
+-- SELECT COUNT(nodes_tags.value) as num
+-- FROM nodes_tags JOIN nodes
+-- WHERE nodes_tags.id=nodes.id and nodes_tags.key='cuisine' and (nodes_tags.value LIKE "%spanish%" or nodes_tags.value LIKE "%local%" or nodes_tags.value LIKE "%regional%" or nodes_tags.value LIKE "%tapas%");
+
+-- SELECT COUNT(nodes_tags.value) as num
+-- FROM nodes_tags JOIN nodes
+-- WHERE nodes_tags.id=nodes.id and nodes_tags.key='cuisine';
+
+SELECT key, type, value, COUNT(*) as num
+FROM nodes_tags
+WHERE not type = "addr" and key ="natural"
+GROUP BY value
+ORDER BY num DESC
+LIMIT 5;

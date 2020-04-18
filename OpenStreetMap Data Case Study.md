@@ -592,6 +592,45 @@ We found 189 amenities, which is almost half of the total 414.
 This category is all about nature.
 Perfoming a similar query than for ways, we can find that most of the information is realted to trees (17770 trees), incluidng its type of leaf.
 
+
+# Suggestions for improving the data or its analysis
+
+As can be seen there is a huge ammount of different information on the tags about very diverse subjects. I think that its structure into key, value, type is too simple and may not be enough.
+
+As a suggestion I would create the concept of datasets. A dataset is a group of fields that always go together since they all descrive the same concept. 
+
+For example address could be a dataset. The dataset Address would contain the datafields: country, state, province, city, postalcode, street, housenumber...
+
+The dataset tree for example could contain the datafields: genus, leaf_cycle, leaf_type...
+
+In the tags we would only refer to the dataset ID and then you could retreive the information of the dataset filds through a join.
+
+For example:
+
+   Node_tag: 
+      
+   tag.key= dataset_tree, tag.value = 123456, tag.type = dataset
+
+   DATASET:
+      
+   dataset_tree.id = 123456, dataset_tree.genus = citrus, dataset_tree.leaf_cycle= evergreen, dataset_tree.leaf_type = broadleaved
+
+## 1. Benefits
+
+   1. In this way we would have different dataset tables, all structured in the same way with predefined fields, helping to improve consitency. 
+
+   2. If we were interested only in the city threes we would only consult the table of the trees dataset and via a join with the nodes we could locate them in the map. 
+
+   3. It would make very easy to add data to the map since the datafields information could be stored and mantained in a different website and we only would need to create the dataset tags on OSM. When interested in consulting the datafields of a given dataset in the map, OSM would make a query to the third party website API and get the datafields through the dataset ID.
+
+   4. The datasets can be a closed list so when people want to contribute they will already have the list of possible datasets and they fields, making easier to standardize information 
+
+## 2. Anticipated Problems
+
+   1. People could introduce information as regular tags if they do not realize that a dataset for this pourpose already exists, having the same type of information in two diferent tables (the tag table and the dataset table)
+
+   2. The dataset maintained in third party websites could dissaperar or even change IDs, making the dataset tags obsolete or wrong.
+
 # Conclusion
  I was actualy impressed by the amount of information and its consistency, completness and accuracy. Regarding completness and consistency, I guess OSM checks for it. Regarding accuracy I guess some people from Seville already followed this course!
  I also noticed that the information is sometimes very specific, like the one related to the trees and tree leafs or buildings style and color. It seems that some people are using Open Street Map to perform its invertigations or classifications, which I found a great idea.
